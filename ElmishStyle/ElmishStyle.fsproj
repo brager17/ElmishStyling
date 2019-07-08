@@ -6,6 +6,11 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <Compile Include="Seed.fs" />
+        <Compile Include="Cmd.fs" />
+        <Compile Include="RingBuffer.fs" />
+        <Compile Include="ElmishProgram.fs" />
+        <Compile Include="LibraryElmish.fs" />
         <Compile Include="Program.fs" />
     </ItemGroup>
 
