@@ -18,5 +18,6 @@
       <PackageReference Include="FSharpx.Collections" Version="2.0.0" />
       <PackageReference Include="FSharpx.Collections.Experimental" Version="2.0.0" />
     </ItemGroup>
+    
 
 </Project>
