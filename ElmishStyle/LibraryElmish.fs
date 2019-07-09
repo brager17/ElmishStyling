@@ -50,8 +50,10 @@ type Msg =
     | ReverseMsg of ReverseMsg
 
 type Model =
-    | Read of SnapshotInfo
-    | Reverse of RevertModel
+    {
+      SnapshotInfo: SnapshotInfo
+      CountStatesBack: CountStatesBack
+    }
 
 let getlines (str: string) startY endY =
         let lines = str.Split [| '\n' |]
@@ -70,15 +72,15 @@ let getlines (str: string) startY endY =
 
 let init() =
     let (Stix text) = seed.[Author.Block]
-    (Read { text = text; yPosition = 0; color = ConsoleColor.Black; formatText = getlines text 0 3 }),
-    Cmd.ofMsg (ReadMsg EventStore)
+    let emptyModel = { text = text; yPosition = 0; color = ConsoleColor.Black; formatText = getlines text 0 3 }
+    { SnapshotInfo = emptyModel; CountStatesBack = CountStatesBack 0 }, Cmd.ofMsg (ReadMsg EventStore)
 
 type ButtonAction =
     | ConsoleColor of ConsoleColor
     | Author of Author
     | ChangePosition of ChangePosition
 
-let readUpdate (msg: ReadMsg) (model: SnapshotInfo) =
+let readUpdate (msg: ReadMsg) (model: Model) =
     match msg with
     | KeyButton button ->
 
@@ -117,85 +119,87 @@ let readUpdate (msg: ReadMsg) (model: SnapshotInfo) =
             | Some s ->
                 match s with
                 | ConsoleColor color ->
-                    { model with color = color }, Cmd.ofMsg EventStore
+                    { model with SnapshotInfo = { model.SnapshotInfo with color = color } }, Cmd.ofMsg EventStore
                 | Author author ->
                      let (Stix text) = seed.[author];
                      let formatText = getlines text 0 2
-                     { text = text; yPosition = 0; color = model.color; formatText = formatText }, Cmd.ofMsg EventStore
+                     let snapshotInfo = { text = text; yPosition = 0; color = model.SnapshotInfo.color; formatText = formatText }
+                     { model with SnapshotInfo = snapshotInfo }, Cmd.ofMsg EventStore
                 | ChangePosition change ->
                      match change with
                      | Up ->
-                         if model.yPosition = 0
+                         if model.SnapshotInfo.yPosition = 0
                           then model, []
                           else
-                          let formatText = getlines model.text (model.yPosition - 1) (model.yPosition + 1)
-                          { model with yPosition = model.yPosition - 1; formatText = formatText }, Cmd.ofMsg EventStore
+                          let formatText = getlines model.SnapshotInfo.text (model.SnapshotInfo.yPosition - 1) (model.SnapshotInfo.yPosition + 1)
+                          let snapshotInfo = { model.SnapshotInfo with yPosition = model.SnapshotInfo.yPosition - 1; formatText = formatText }
+                          { model with SnapshotInfo = snapshotInfo }, Cmd.ofMsg EventStore
                      | Down ->
-                          if model.yPosition = (model.text.Split [| '\n' |]).Length - 1
+                          if model.SnapshotInfo.yPosition = (model.SnapshotInfo.text.Split [| '\n' |]).Length - 1
                            then model, []
                            else
-                              let formatText = getlines model.text (model.yPosition + 1) (model.yPosition + 3)
-                              { model with yPosition = model.yPosition + 1; formatText = formatText }, Cmd.ofMsg EventStore
+                              let formatText = getlines model.SnapshotInfo.text (model.SnapshotInfo.yPosition + 1) (model.SnapshotInfo.yPosition + 3)
+                              { model with SnapshotInfo = { model.SnapshotInfo with yPosition = model.SnapshotInfo.yPosition + 1; formatText = formatText } }, Cmd.ofMsg EventStore
 
 
             | None -> failwith "error"
     | EventStore ->
-        storage <- storage @ [ model ]
+        storage <- storage @ [ model.SnapshotInfo ]
         model, []
 
 
 let view (model: Model) dispatch =
     let changeVersion = ReverseMsg.KeyButton >> ReverseMsg >> dispatch
+
     let changeContent = ReadMsg.KeyButton >> ReadMsg >> dispatch
 
     let matchDispatch key =
         match key with
         | ConsoleKey.LeftArrow | ConsoleKey.RightArrow -> changeVersion key
         | ConsoleKey.P | ConsoleKey.B | ConsoleKey.L | ConsoleKey.E
-        | ConsoleKey.D1 | ConsoleKey.D2 | ConsoleKey.D3 | ConsoleKey.D4 | ConsoleKey.D5 -> changeContent key
+        | ConsoleKey.D1 | ConsoleKey.D2 | ConsoleKey.D3 | ConsoleKey.D4 | ConsoleKey.D5
+        | ConsoleKey.UpArrow | ConsoleKey.DownArrow -> changeContent key
         | _ -> ()
 
-    match model with
-    | Read r ->
-        Console.Clear();
-        Console.ForegroundColor <- r.color
-        Console.WriteLine(r.formatText)
-        let key = Console.ReadKey().Key
 
-        matchDispatch key
+    let r = model.SnapshotInfo
 
-    | Reverse(r1, r) ->
-        Console.Clear();
-        Console.ForegroundColor <- r.color
-        Console.WriteLine(r.formatText)
-        let key = Console.ReadKey()
-        let key = Console.ReadKey().Key
-        matchDispatch key
+    Console.Clear();
+    Console.ForegroundColor <- r.color
+    Console.WriteLine(r.formatText)
+    let key = Console.ReadKey().Key
+    matchDispatch key
 
 
 
-let reverseUpdate (msg: ReverseMsg) (model: RevertModel) =
-    let ((CountStatesBack count), snapshot) = model;
+
+let reverseUpdate (msg: ReverseMsg) (model: Model) =
+    let (CountStatesBack count) = model.CountStatesBack;
     match msg with
     | ReverseMsg.KeyButton k ->
         match k with
-        | ConsoleKey.LeftArrow  ->
-            let model = storage.[storage.Length - count -1 - 1]
-            { model with count = count + 1 }, []
-        | ConsoleKey.RightArrow  ->
-            let model = storage.[storage.Lengh - count +1 - 1]
-            { model with count = count - 1 }, []
+        | ConsoleKey.LeftArrow ->
+            let snapshot = storage.[storage.Length - count - 1 - 1]
+            let count = CountStatesBack(count + 1)
+            { SnapshotInfo = snapshot; CountStatesBack = count }, []
+        | ConsoleKey.RightArrow ->
+            let snapshot = storage.[storage.Length - count + 1 - 1]
+            let count = CountStatesBack(count - 1 - 1)
+            { SnapshotInfo = snapshot; CountStatesBack = count }, []
+
+
+
 
 
 let update (msg: Msg) (model: Model) =
-    match (msg, model) with
-    | (ReadMsg readmsg, Read readmodel) ->
-        let (model, cmd) = readUpdate readmsg readmodel
-        Read model, Cmd.map ReadMsg cmd
-    | (ReverseMsg reverseMsg, Reverse(a, b)) ->
-        let (model, cmd) = reverseUpdate reverseMsg (a, b)
-        Reverse model, Cmd.map ReverseMsg cmd
-    | (_, _) -> failwith "error"
+    match msg with
+    | ReadMsg readmsg ->
+        let (model, cmd) = readUpdate readmsg model
+        model, Cmd.map ReadMsg cmd
+    | ReverseMsg reverseMsg ->
+        let (model, cmd) = reverseUpdate reverseMsg model
+        model, Cmd.map ReverseMsg cmd
+    | _ -> failwith "error"
 
 
 
