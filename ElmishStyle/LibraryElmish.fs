@@ -39,9 +39,6 @@ type RevertModel = CountStatesBack * SnapshotInfo
 type ReverseMsg =
     | KeyButton of ConsoleKey
 
-type Model =
-    | Read of SnapshotInfo
-    | Reverse of RevertModel * SnapshotInfo
 
 type ReadMsg =
     | KeyButton of ConsoleKey
@@ -52,9 +49,9 @@ type Msg =
     | ReadMsg of ReadMsg
     | ReverseMsg of ReverseMsg
 
-let init() =
-    { text = ""; yPosition = 0; color = ConsoleColor.Black; formatText = "" }, Cmd.ofMsg ((Author.Block, ConsoleColor.Black))
-
+type Model =
+    | Read of SnapshotInfo
+    | Reverse of RevertModel
 
 let getlines (str: string) startY endY =
         let lines = str.Split [| '\n' |]
@@ -71,6 +68,10 @@ let getlines (str: string) startY endY =
                 |> String.concat ("\n")
 
 
+let init() =
+    let (Stix text) = seed.[Author.Block]
+    (Read { text = text; yPosition = 0; color = ConsoleColor.Black; formatText = getlines text 0 3 }),
+    Cmd.ofMsg (ReadMsg EventStore)
 
 type ButtonAction =
     | ConsoleColor of ConsoleColor
@@ -95,7 +96,6 @@ let readUpdate (msg: ReadMsg) (model: SnapshotInfo) =
                         | ConsoleKey.D4 -> Some ConsoleColor.Green
                         | ConsoleKey.D5 -> Some ConsoleColor.Cyan
                         | _ -> None)
-
 
             let q1 =
                     Option.bind (Author >> Some)
@@ -130,7 +130,7 @@ let readUpdate (msg: ReadMsg) (model: SnapshotInfo) =
                           else
                           let formatText = getlines model.text (model.yPosition - 1) (model.yPosition + 1)
                           { model with yPosition = model.yPosition - 1; formatText = formatText }, Cmd.ofMsg EventStore
-                     |Down ->
+                     | Down ->
                           if model.yPosition = (model.text.Split [| '\n' |]).Length - 1
                            then model, []
                            else
@@ -139,29 +139,66 @@ let readUpdate (msg: ReadMsg) (model: SnapshotInfo) =
 
 
             | None -> failwith "error"
+    | EventStore ->
+        storage <- storage @ [ model ]
+        model, []
+
+
+let view (model: Model) dispatch =
+    let changeVersion = ReverseMsg.KeyButton >> ReverseMsg >> dispatch
+    let changeContent = ReadMsg.KeyButton >> ReadMsg >> dispatch
+
+    let matchDispatch key =
+        match key with
+        | ConsoleKey.LeftArrow | ConsoleKey.RightArrow -> changeVersion key
+        | ConsoleKey.P | ConsoleKey.B | ConsoleKey.L | ConsoleKey.E
+        | ConsoleKey.D1 | ConsoleKey.D2 | ConsoleKey.D3 | ConsoleKey.D4 | ConsoleKey.D5 -> changeContent key
+        | _ -> ()
+
+    match model with
+    | Read r ->
+        Console.Clear();
+        Console.ForegroundColor <- r.color
+        Console.WriteLine(r.formatText)
+        let key = Console.ReadKey().Key
+
+        matchDispatch key
+
+    | Reverse(r1, r) ->
+        Console.Clear();
+        Console.ForegroundColor <- r.color
+        Console.WriteLine(r.formatText)
+        let key = Console.ReadKey()
+        let key = Console.ReadKey().Key
+        matchDispatch key
 
 
 
-let reverseUpdate (msg:ReverseMsg) (model:RevertModel) =
-    model,[]
-
-
-
-
-
-
+let reverseUpdate (msg: ReverseMsg) (model: RevertModel) =
+    let ((CountStatesBack count), snapshot) = model;
+    match msg with
+    | ReverseMsg.KeyButton k ->
+        match k with
+        | ConsoleKey.LeftArrow  ->
+            let model = storage.[storage.Length - count -1 - 1]
+            { model with count = count + 1 }, []
+        | ConsoleKey.RightArrow  ->
+            let model = storage.[storage.Lengh - count +1 - 1]
+            { model with count = count - 1 }, []
 
 
 let update (msg: Msg) (model: Model) =
-    match (msg,model) with
-    |(ReadMsg readmsg,Read readmodel) ->
-        let (model,cmd) = readUpdate readmsg readmodel
-        
-    |(ReverseMsg reverseMsg, Reverse (a,b)) ->
-        reverseUpdate reverseMsg (Reverse (a,b))
-        
-        
-        
+    match (msg, model) with
+    | (ReadMsg readmsg, Read readmodel) ->
+        let (model, cmd) = readUpdate readmsg readmodel
+        Read model, Cmd.map ReadMsg cmd
+    | (ReverseMsg reverseMsg, Reverse(a, b)) ->
+        let (model, cmd) = reverseUpdate reverseMsg (a, b)
+        Reverse model, Cmd.map ReverseMsg cmd
+    | (_, _) -> failwith "error"
+
+
+
 
 
 
