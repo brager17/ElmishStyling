@@ -6,9 +6,8 @@ type Program<'model, 'msg, 'view> =
         {
           init: unit ->'model * Cmd<'msg>
           update: 'msg -> 'model -> ('model * Cmd<'msg>)
-          setState: 'model -> Dispatch<'msg> -> unit
           view: 'model -> Dispatch<'msg> -> 'view
-          eventView: 'msg -> 'view
+          eventView: 'msg -> 'model->Dispatch<'msg> ->'view
          }
         
 
@@ -27,7 +26,7 @@ type Program<'model, 'msg, 'view> =
                      reentered <- true
                      let (model, cmd) = program.update nextMsg.Value state
                      Cmd.exec dispatch cmd |> ignore
-                     let view = program.setState model dispatch
+                     let view = program.eventView nextMsg.Value model dispatch
                      state <- model;
                      nextMsg <- buffer.Pop()
                      reentered <- false;

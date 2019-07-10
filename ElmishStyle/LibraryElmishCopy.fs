@@ -112,7 +112,7 @@ let updateChangeVersion (model: Model) (changeVersion: ChangeVersion) =
                  | _, _, _ -> model.countVersionBack
 
     let reverseModel = model.history.[model.history.Length - 1 - countVersionBack]
-    { model with countVersionBack = countVersionBack; viewTextInfo = reverseModel;},[]
+    { model with countVersionBack = countVersionBack; viewTextInfo = reverseModel;},Cmd.ofMsg Empty
 
 
 let updateAddEvent model =
