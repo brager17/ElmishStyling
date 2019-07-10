@@ -6,8 +6,11 @@ type Program<'model, 'msg, 'view> =
         {
           init: unit ->'model * Cmd<'msg>
           update: 'msg -> 'model -> ('model * Cmd<'msg>)
+          setState: 'model -> Dispatch<'msg> -> unit
           view: 'model -> Dispatch<'msg> -> 'view
+          eventView: 'msg -> 'view
          }
+        
 
    let runWith<'arg, 'model, 'msg, 'view> (arg: 'arg) (program: Program<'model, 'msg, 'view>) =
         let (initModel, initCmd) = program.init()
@@ -23,8 +26,8 @@ type Program<'model, 'msg, 'view> =
                  while Option.isSome nextMsg do
                      reentered <- true
                      let (model, cmd) = program.update nextMsg.Value state
-                     let view = program.view model dispatch
                      Cmd.exec dispatch cmd |> ignore
+                     let view = program.setState model dispatch
                      state <- model;
                      nextMsg <- buffer.Pop()
                      reentered <- false;

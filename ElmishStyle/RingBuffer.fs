@@ -17,12 +17,12 @@ module RingBuffer
         member this.Pop() =
             match state with
             | ReadAndWrite(arr, wix, rix) ->
-                let rix' = (rix + 1)%arr.Length;
+                let rix' = (rix + 1) % arr.Length;
                 match wix = rix' with
                 | true ->
                     state <- Write(arr, wix)
                 | false ->
-                    state <- ReadAndWrite(arr, wix,  rix')
+                    state <- ReadAndWrite(arr, wix, rix')
                 Some arr.[rix]
             | _ -> None
 
@@ -30,15 +30,16 @@ module RingBuffer
             match state with
             | Write(arr, wix) ->
                 arr.[wix] <- item
-                let wix' = (wix+1)% arr.Length 
-                state <- ReadAndWrite (arr,wix',wix)
+                let wix' = (wix + 1) % arr.Length
+                state <- ReadAndWrite(arr, wix', wix)
             | ReadAndWrite(arr, wix, rix) ->
-                let wix' = (wix+1) % arr.Length
+                let wix' = (wix + 1) % arr.Length
                 match wix' = rix with
                 | true ->
                     state <- ReadAndWrite(arrMod wix arr, wix', 0)
                     arr.[wix] <- item;
                 | false ->
                     arr.[wix] <- item;
+                    state <- ReadAndWrite(arr, wix', rix)
 
 
