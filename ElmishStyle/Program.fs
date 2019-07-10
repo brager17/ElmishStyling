@@ -17,7 +17,7 @@ let main argv =
                     view = view;
                     eventView = (fun msg ->
                                         match msg with
-                                        | Event| Empty -> SnowAndUserActionView
+                                        | FixEvent| WaitUserAction -> SnowAndUserActionView
                                         | ChangePosition _ | ChangeAuthor _ | ChangeColor _
                                         | ChangeVersion _ | ConsoleEvent _  -> OnlyShowView
 
