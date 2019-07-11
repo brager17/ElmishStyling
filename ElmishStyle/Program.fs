@@ -14,13 +14,13 @@ let main argv =
                 {
                     init = init
                     update = update;
-                    view = view;
                     eventView = (fun msg ->
                                         match msg with
-                                        | FixEvent| WaitUserAction -> SnowAndUserActionView
+                                        
+                                        | WaitUserAction -> SnowAndUserActionView
+                                        
                                         | ChangePosition _ | ChangeAuthor _ | ChangeColor _
-                                        | ChangeVersion _ | ConsoleEvent _  -> OnlyShowView
-
+                                        | ChangeVersion _ | ConsoleEvent _ | FixEvent _ -> OnlyShowView
                                 )
                 }
     run program |> ignore

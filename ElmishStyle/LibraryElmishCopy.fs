@@ -3,8 +3,6 @@ open ElmishStyle.Seed
 open System
 open ElmishProgram
 open Cmd
-type YPosition = YPosition of int
-
 type ChangeVersion =
     | Back
     | Forward
@@ -67,16 +65,8 @@ let splitStr (str: string) =
 // no error handling
 let getlines (str: string) startY endY =
         let lines = splitStr str
-        let difference = abs (startY - endY);
-        if difference > lines.Length
-            then failwith "error"
-            else
-                let (startY', endY') =
-                    if startY < 0
-                     then (0, difference)
-                     else if endY > lines.Length - 1 then (lines.Length - 1 - difference, lines.Length - 1)
-                     else (startY, endY)
-                lines.[startY'..endY'] |> List.ofArray
+        let _ = abs (startY - endY);
+        lines.[startY ..endY] |> List.ofArray
                 |> String.concat ("\n")
 
 let init() =
@@ -87,20 +77,23 @@ let init() =
 
 let updateChangeAuthor (model: Model) (author: Author) =
     let (Stix text) = seed.[author]
-    let formatText = getlines text 0 2
+    let formatText = getlines text 0 3
     let countLines = (splitStr text).Length
-    { model with viewTextInfo = { model.viewTextInfo with text = text; formatText = formatText; countLines = countLines } ; countVersionBack = 0 }, Cmd.ofMsg FixEvent
+    { model with viewTextInfo = { model.viewTextInfo with text = text; formatText = formatText; countLines = countLines }; countVersionBack = 0 }, Cmd.ofMsg FixEvent
 
 
 let updateChangeColor (model: Model) (color: ConsoleColor) =
-    { model with viewTextInfo = { model.viewTextInfo with color = color }; countVersionBack = 0  }, Cmd.ofMsg FixEvent
+    { model with viewTextInfo = { model.viewTextInfo with color = color }; countVersionBack = 0 }, Cmd.ofMsg FixEvent
 
 
 let updateChangePosition (model: Model) (changePosition: ChangePosition) =
+    let text = model.viewTextInfo.text
+    let formatText = model.viewTextInfo.formatText
+    
     let (yPosition, formatText) = match changePosition, model.viewTextInfo.positionY, model.viewTextInfo.countLines with
-                                    | Up, y, length when y < length - 3 -> (y + 1, getlines model.viewTextInfo.text (y + 1) (y + 4))
-                                    | Down, y, _ when y > 0 -> (y - 1, getlines model.viewTextInfo.text (y - 1) (y + 3))
-                                    | _, _, _ -> (model.viewTextInfo.positionY, model.viewTextInfo.formatText)
+                                    | Up, y, length when y < length - 4 -> (y + 1, getlines text (y + 1) (y + 4))
+                                    | Down, y, _ when y > 0 -> (y - 1, getlines text (y - 1) (y + 2))
+                                    | _, y, _ -> (y,formatText)
 
     { model with viewTextInfo = { model.viewTextInfo with positionY = yPosition; formatText = formatText }; countVersionBack = 0 }, Cmd.ofMsg FixEvent
 
@@ -108,17 +101,15 @@ let updateChangePosition (model: Model) (changePosition: ChangePosition) =
 let updateChangeVersion (model: Model) (changeVersion: ChangeVersion) =
     let countVersionBack =
                  match changeVersion, model.countVersionBack, model.history.Length with
-                 | Back, countVersionBack, length when countVersionBack < length-1 -> model.countVersionBack + 1
-                 | Forward, countVersionBack, _ when countVersionBack > 0 -> model.countVersionBack - 1
-                 | _, _, _ -> model.countVersionBack
+                 | Back, countVersionBack, length when countVersionBack < length - 1 -> countVersionBack + 1
+                 | Forward, countVersionBack, _ when countVersionBack > 0 -> countVersionBack - 1
+                 | _, countVersionBack, _ -> countVersionBack
 
     let reverseModel = model.history.[model.history.Length - 1 - countVersionBack]
-    { model with countVersionBack = countVersionBack; viewTextInfo = reverseModel;},Cmd.ofMsg WaitUserAction
-
+    { model with countVersionBack = countVersionBack; viewTextInfo = reverseModel; }, Cmd.ofMsg WaitUserAction
 
 let updateAddEvent model =
-    { model with history = model.history @ [ model.viewTextInfo ] }, []
-
+    { model with history = model.history @ [ model.viewTextInfo ] }, Cmd.ofMsg WaitUserAction
 
 let update (msg: Msg) (model: Model) =
     match msg with
@@ -130,18 +121,17 @@ let update (msg: Msg) (model: Model) =
     | FixEvent -> updateAddEvent model
     | WaitUserAction -> model, []
 
-let OnlyShowView (model: Model) (_: Msg -> unit) =
+let clearConsoleAndPrintTextWithColor (text:string) (color:ConsoleColor)=
    Console.Clear();
    Console.WriteLine()
-   Console.ForegroundColor <- model.viewTextInfo.color
-   Console.WriteLine(model.viewTextInfo.formatText)
+   Console.ForegroundColor <- color
+   Console.WriteLine(text)
+
+let OnlyShowView (model: Model) (_: Msg -> unit) =
+   clearConsoleAndPrintTextWithColor model.viewTextInfo.formatText  model.viewTextInfo.color
 
 let SnowAndUserActionView (model: Model) (dispatch: Msg -> unit) =
-   Console.Clear();
-   Console.ForegroundColor <- model.viewTextInfo.color
-   Console.WriteLine()
-   Console.WriteLine(model.viewTextInfo.formatText)
+   clearConsoleAndPrintTextWithColor model.viewTextInfo.formatText  model.viewTextInfo.color
    let key = Console.ReadKey().Key;
    Msg.ConsoleEvent key |> dispatch
 
-let view msg dispath = ()
