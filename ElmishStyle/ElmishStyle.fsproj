@@ -11,7 +11,6 @@
         <Compile Include="RingBuffer.fs" />
         <Compile Include="ElmishProgram.fs" />
         <Compile Include="LibraryElmishCopy.fs" />
-        <Compile Include="Program.fs" />
     </ItemGroup>
 
     <ItemGroup>
@@ -21,6 +20,7 @@
 
     <ItemGroup>
       <Compile Include="Tests\LibraryElmishTests.fs" />
+      <Compile Include="Program.fs" />
     </ItemGroup>
     
 

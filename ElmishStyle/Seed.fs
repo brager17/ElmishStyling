@@ -2,16 +2,15 @@ module ElmishStyle.Seed
 
 type Author =
         | Default =0
-        | Push = 1
-        | Ler =2
-        | Block =3
+        | Pushkin = 1
+        | Lermontov =2
+        | Blok =3
         | Esenin=4
 
-type Stix = Stix of string
-
+type Poem = Poem of string
 let seed = dict [
 
-               Author.Push, Stix "
+               Author.Pushkin, Poem "
                                               Октябрь уж наступил — уж роща отряхает
                                               Последние листы с нагих своих ветвей;
                                               Дохнул осенний хлад — дорога промерзает.
@@ -31,7 +30,7 @@ let seed = dict [
                                               Когда под соболем, согрета и свежа,
                                               Она вам руку жмет, пылая и дрожа!"
 
-               Author.Block, Stix "
+               Author.Blok, Poem "
                                               Река раскинулась. Течет, грустит лениво
                                               И моет берега.
                                               Над скудной глиной желтого обрыва
@@ -67,7 +66,7 @@ let seed = dict [
                                               Покоя нет! Степная кобылица
                                               Несется вскачь!"
 
-               Author.Esenin, Stix "
+               Author.Esenin, Poem "
                                               Ты меня не любишь, не жалеешь,
                                               Разве я немного не красив?
                                               Не смотря в лицо, от страсти млеешь,
@@ -113,7 +112,7 @@ let seed = dict [
                                               Кто любил, уж тот любить не может,
                                               Кто сгорел, того не подожжешь."
 
-               Author.Ler, Stix "
+               Author.Lermontov, Poem "
                                                Ночевала тучка золотая
                                                На груди утеса-великана;
                                                Утром в путь она умчалась рано,
