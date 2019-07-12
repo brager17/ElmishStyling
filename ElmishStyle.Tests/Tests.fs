@@ -57,6 +57,7 @@ let ``Одинаковое количество форматирований в�
            model.viewTextInfo.positionY = state.viewTextInfo.positionY
        else true
 
+//todo смешать команды
 [<Property(Verbose=true,StartSize=1000,MaxTest=1000)>]
 let ``Вызов случайных команд при их откате возвращает систему в первоначальное состояние``
       changeColors changeAuthors changePosition changeVersion =
