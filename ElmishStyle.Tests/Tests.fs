@@ -15,7 +15,7 @@ let createProgram (msgPool: Msg list) =
                     init = init
                     update = update;
                     view = (fun x y -> ())
-                    setState = (fun model msg dispatch ->
+                    setState = (fun _ msg dispatch ->
                                     match msg with
 
                                     | WaitUserAction ->
@@ -27,8 +27,6 @@ let createProgram (msgPool: Msg list) =
                         )
                 }
 
-let ``Нажатие любых случайных клавиш игнорируется`` consoleKeys =
-    consoleKeys |> List.map(fun x -> Msg x)
 
 [<Property(Verbose=true,StartSize=1000,MaxTest=1000)>]
 let ``Цвет равен последнему переданному цвету`` (changeColorMsg: ConsoleColor list) =
@@ -66,17 +64,48 @@ let ``Вызов случайных команд при их откате воз
           let changeAuthorMsgs = changeAuthors |> List.map (ChangeAuthor)
           let changePositionMsgs = changePosition |> List.map (ChangePosition)
           let changeVersionMsgs = changeVersion |> List.map (ChangeVersion)
+          let allChanges = changeColorsMsgs @ changeAuthorMsgs @ changePositionMsgs @ changeVersionMsgs
 
-          let allChanges = [ changeColorsMsgs; changeAuthorMsgs; changePositionMsgs; changeVersionMsgs ]
-
-          let countChanges = allChanges
-                             |> List.sumBy (fun x -> x.Length)
+          let countChanges = allChanges.Length
 
           let reverseChanges = List.init countChanges (fun _ -> (ChangeVersion.Back |> ChangeVersion))
 
           let (stateInit, _) = init()
-          let state = (createProgram ((allChanges |> List.concat) @ reverseChanges) |> run)
+          let state = (createProgram (allChanges @ reverseChanges) |> run)
           stateInit.viewTextInfo = state.viewTextInfo
+
+[<Property(Verbose=true,MaxTest=1000)>]
+let ``Вызов случайных цепочек команд смены цвета и автора корректен`` changeColors changeAuthors =
+          let changeColorsMsgs = changeColors |> List.map (ChangeColor)
+          let changeAuthorMsgs = changeAuthors |> List.map (ChangeAuthor)
+          
+          let allChanges = changeColorsMsgs @ changeAuthorMsgs 
+
+          let lastColor = changeColors |> List.tryLast
+          let lastAuthor = changeAuthors |> List.tryLast
+
+          let state = (createProgram allChanges |> run)
+
+          let colorTest =
+              match lastColor with
+              | Some s -> state.viewTextInfo.color = s
+              | None -> true
+
+          let authorTest =
+              match lastAuthor with
+              | Some s ->
+                  let (Poem t) = seed.[s];
+                  state.viewTextInfo.text = t
+              | None -> true
+
+          authorTest && colorTest
+
+
+
+
+
+
+
 
 
 
