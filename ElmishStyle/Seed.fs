@@ -1,7 +1,6 @@
 module ElmishStyle.Seed
 
 type Author =
-        | Default =0
         | Pushkin = 1
         | Lermontov =2
         | Blok =3

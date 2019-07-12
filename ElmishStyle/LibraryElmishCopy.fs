@@ -29,6 +29,7 @@
         | ChangeVersion of ChangeVersion
         | RememberModel
         | WaitUserAction
+        | Exit
 
     type Model =
         {
@@ -57,6 +58,8 @@
         | ConsoleKey.UpArrow -> ChangePosition Up
         | ConsoleKey.DownArrow -> ChangePosition Down
 
+        |ConsoleKey.X -> Exit
+        
         | _ -> WaitUserAction
        msg |> Cmd.ofMsg
 
@@ -75,7 +78,7 @@
         let (Poem text) = seed.[Author.Blok]
         let countLines = (splitStr text).Length
         let emptyModel = { viewTextInfo = { text = text; positionY = 0; color = ConsoleColor.Black; formatText = getlines text 0 3; countLines = countLines }; countVersionBack = 0; history = [] }
-        emptyModel, Cmd.ofMsg (ChangePosition ChangePosition.Up)
+        emptyModel, Cmd.ofMsg (RememberModel)
 
     let updateChangeAuthor (model: Model) (author: Author) =
         let (Poem updatedText) = seed.[author]
@@ -110,14 +113,14 @@
 
 
     let updateChangeVersion (model: Model) (changeVersion: ChangeVersion) =
-        let countVersionBack =
+        let historyVersion =
          match changeVersion, model.countVersionBack, model.history.Length with
          | Back, countVersionBack, length when countVersionBack < length - 1 -> countVersionBack + 1
          | Forward, countVersionBack, _ when countVersionBack > 0 -> countVersionBack - 1
          | _, countVersionBack, _ -> countVersionBack
 
-        let reverseModel = model.history.[model.history.Length - 1 - countVersionBack]
-        { model with countVersionBack = countVersionBack; viewTextInfo = reverseModel }, Cmd.ofMsg WaitUserAction
+        let reverseModel = model.history.[model.history.Length - 1 - historyVersion]
+        { model with countVersionBack = historyVersion; viewTextInfo = reverseModel }, Cmd.ofMsg WaitUserAction
 
     let updateModelHistory model =
         { model with history = model.history @ [ model.viewTextInfo ] },
@@ -132,6 +135,8 @@
         | ChangeVersion version -> updateChangeVersion model version
         | RememberModel -> updateModelHistory model
         | WaitUserAction -> model, []
+        | Exit -> model, []
+
 
     let clearConsoleAndPrintTextWithColor (text: string) (color: ConsoleColor) =
        Console.Clear();
@@ -143,6 +148,13 @@
        let { formatText = ft; color = clr } = model.viewTextInfo;
        clearConsoleAndPrintTextWithColor ft clr
 
+    let ExitView (_:Model)((_: Msg -> unit)) =
+         Console.Clear();
+         Console.ResetColor();
+         Console.WriteLine("До скорого!")
+
+
+    
     let SnowAndUserActionView (model: Model) (dispatch: Msg -> unit) =
        let { formatText = ft; color = clr } = model.viewTextInfo;
        clearConsoleAndPrintTextWithColor ft clr

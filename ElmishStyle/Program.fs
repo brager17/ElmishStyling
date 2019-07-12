@@ -21,6 +21,7 @@ let main argv =
                                                     | WaitUserAction -> SnowAndUserActionView
                                                     | ChangePosition _ | ChangeAuthor _ | ChangeColor _
                                                     | ChangeVersion _ | ConsoleEvent _ | RememberModel _ -> OnlyShowView
+                                                    | Exit -> ExitView
                                     
                                     view model dispatch
                         )

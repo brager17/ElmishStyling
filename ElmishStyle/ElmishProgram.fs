@@ -30,7 +30,8 @@ let runWith<'arg, 'model, 'msg, 'view> (program: Program<'model, 'msg, 'view>) =
                  nextMsg <- buffer.Pop()
                  reentered <- false;
 
-    Cmd.exec dispatch initCmd
+    Cmd.exec dispatch initCmd |> ignore
+    state
 
 let run program = runWith program
 
