@@ -1,40 +1,28 @@
 module Tests
-open System
 open ElmishStyle.LibraryElmishCopy
 open ElmishProgram
-open ElmishStyle.LibraryElmishCopy
-
-open System
-
 open FsCheck.Xunit
 open FsCheck
 open ElmishStyle.Seed
-let createProgram (msgPool: Msg list) =
-                let mutable counter = 0
-                {
-                    init = init
-                    update = update;
-                    view = (fun x y -> ())
-                    setState = (fun _ msg dispatch ->
-                                    match msg with
 
-                                    | WaitUserAction ->
-                                        if counter <= msgPool.Length - 1 then
-                                                counter <- counter + 1
-                                                dispatch msgPool.[counter - 1]
-                                        else ()
-                                    | _ -> ()
-                        )
-                }
+    let createProgram (msgPool: Msg list) =
+                    let mutable counter = 0
+                    {
+                        init = init
+                        update = update;
+                        setState =
+                            (fun _ msg dispatch ->
+                                match msg with
+                                | WaitUserAction ->
+                                    if counter <= msgPool.Length - 1 then
+                                            counter <- counter + 1
+                                            dispatch msgPool.[counter - 1]
+                                    else ()
+                                | _ -> ())
+                    }
 
-
-[<Property>]
-let ``square should be positive`` (x:float) =
-    not (Double.IsNaN(x)) ==> (x * x >= 0.)
-
-
-[<Property(Verbose=true,StartSize=1000,MaxTest=1000)>]
-let ``Цвет равен последнему переданному цвету`` (changeColorMsg: ConsoleColor list) =
+[<Property(Verbose=true)>]
+let ``Цвет равен последнему переданному цвету`` changeColorMsg =
     let state = (createProgram (changeColorMsg |> List.map ChangeColor) |> run)
     match (changeColorMsg |> List.tryLast) with
     | Some s -> state.viewTextInfo.color = s
@@ -45,8 +33,9 @@ type Positive =
     static member Int() =
         Arb.Default.Int32()
         |> Arb.mapFilter abs (fun t -> t >= 0)
-        
-[<Property(Verbose=true,StartSize=1000,MaxTest=1000)>]
+
+
+[<Property(Verbose=true)>]
 let ``Автор равен последнему переданному автору`` authors =
     let state = (createProgram (authors |> List.map ChangeAuthor) |> run)
     match (authors |> List.tryLast) with
@@ -55,70 +44,62 @@ let ``Автор равен последнему переданному авто
         state.viewTextInfo.text = text
     | None -> true
 
-[<Property(Verbose=true,StartSize=1000,MaxTest=1000,Arbitrary=[|typeof<Positive>|])>]
-let ``Одинаковое количество форматирований вниз и вверх оставляют систему в том же состоянии`` (countChangePositions:int) =
-       (countChangePositions>0) ==>
-           (   let toUpSeq = List.init countChangePositions (fun x -> ChangePosition.Up)
-               let dSeq = List.init countChangePositions (fun x -> ChangePosition.Down)
-               let UpToSeq = toUpSeq @ dSeq |> List.map (ChangePosition)
-               let SeqToUp = dSeq @ toUpSeq |> List.map (ChangePosition)
-               let (model, cmd) = init()
-               let state = (createProgram UpToSeq |> run)
-               model.viewTextInfo.positionY = state.viewTextInfo.positionY)
 
-//todo смешать команды
-[<Property(Verbose=true,StartSize=1000,MaxTest=1000)>]
-let ``Вызов случайных команд при их откате возвращает систему в первоначальное состояние``
-      changeColors changeAuthors changePosition changeVersion =
-          let changeColorsMsgs = changeColors |> List.map (ChangeColor)
-          let changeAuthorMsgs = changeAuthors |> List.map (ChangeAuthor)
-          let changePositionMsgs = changePosition |> List.map (ChangePosition)
-          let changeVersionMsgs = changeVersion |> List.map (ChangeVersion)
-          let allChanges = changeColorsMsgs @ changeAuthorMsgs @ changePositionMsgs @ changeVersionMsgs
 
-          let countChanges = allChanges.Length
+type ChangeContentCommands =
+    static member ChangeContentCommands() =
+        Arb.Default.Derive()
+        |> Arb.filter (fun x -> match x with
+                        | ChangePosition _ | ChangeAuthor _ | ChangeColor _ | ChangeVersion _
+                         -> true | _ -> false)
 
+
+type ChangeColorAuthorPosition =
+    static member ChangeContentCommands() =
+         Arb.Default.Derive()
+        |> Arb.filter (fun x -> match x with | ChangeAuthor _ | ChangeColor _ -> true | _ -> false)
+
+[<Property(Verbose=true,Arbitrary=[|typeof<ChangeContentCommands>|])>]
+let ``Вызов случайных команд при их откате возвращает систему в первоначальное состояние`` (changeContentCommands: Msg) =
+          let countChanges = [ changeContentCommands ].Length
           let reverseChanges = List.init countChanges (fun _ -> (ChangeVersion.Back |> ChangeVersion))
-
           let (stateInit, _) = init()
-          let state = (createProgram (allChanges @ reverseChanges) |> run)
+          let state = (createProgram ([ changeContentCommands ] @ reverseChanges) |> run)
           stateInit.viewTextInfo = state.viewTextInfo
 
-[<Property>]
-let a intValue=
-    intValue>=0 ==>
-           
-               let s = intValue
-               printf "intValue %A" intValue
-               intValue >0
-           
+[<Property(Verbose=true,Arbitrary=[|typeof<ChangeColorAuthorPosition>|])>]
+let ``Вызов случайных цепочек команд смены цвета и автора корректен`` msgs =
+      let tryLastSomeList list = list |> List.filter (Option.isSome)
+                                      |> List.map (Option.get)
+                                      |> List.tryLast
+      let lastAuthor = msgs
+                       |> List.map (fun x -> match x with
+                                             | ChangeAuthor a -> Some a
+                                             | _ -> None)
+                       |> tryLastSomeList
 
+      let lastColor = msgs
+                       |> List.map (fun x -> match x with
+                                            | ChangeColor a -> Some a
+                                            | _ -> None)
+                       |> tryLastSomeList
 
-[<Property(Verbose=true,MaxTest=1000)>]
-let ``Вызов случайных цепочек команд смены цвета и автора корректен`` changeColors changeAuthors =
-          let changeColorsMsgs = changeColors |> List.map (ChangeColor)
-          let changeAuthorMsgs = changeAuthors |> List.map (ChangeAuthor)
-          
-          let allChanges = changeColorsMsgs @ changeAuthorMsgs 
+      let state = (createProgram msgs |> run)
 
-          let lastColor = changeColors |> List.tryLast
-          let lastAuthor = changeAuthors |> List.tryLast
+      let colorTest =
+          match lastColor with
+          | Some s -> state.viewTextInfo.color = s
+          | None -> true
 
-          let state = (createProgram allChanges |> run)
+      let authorTest =
+          match lastAuthor with
+          | Some s ->
+              let (Poem t) = seed.[s];
+              state.viewTextInfo.text = t
+          | None -> true
 
-          let colorTest =
-              match lastColor with
-              | Some s -> state.viewTextInfo.color = s
-              | None -> true
+      authorTest && colorTest
 
-          let authorTest =
-              match lastAuthor with
-              | Some s ->
-                  let (Poem t) = seed.[s];
-                  state.viewTextInfo.text = t
-              | None -> true
-
-          authorTest && colorTest
 
 
 

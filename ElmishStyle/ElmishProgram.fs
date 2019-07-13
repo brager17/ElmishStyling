@@ -6,7 +6,6 @@ type Program<'model, 'msg, 'view> =
         {
           init: unit ->'model * Cmd<'msg>
           update: 'msg -> 'model -> ('model * Cmd<'msg>)
-          view: 'model -> Dispatch<'msg> -> 'view
           setState: 'model -> 'msg -> Dispatch<'msg> -> unit
          }
 

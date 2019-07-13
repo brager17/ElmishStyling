@@ -105,8 +105,8 @@
         let formatText = model.viewTextInfo.formatText
 
         let (yPosition, formatText) = match changePosition, model.viewTextInfo.positionY, model.viewTextInfo.countLines with
-                                        | Up, y, length when y < length - 4 -> (y + 1, getlines text (y + 1) (y + 4))
-                                        | Down, y, _ when y > 0 -> (y - 1, getlines text (y - 1) (y + 2))
+                                        | Down, y, length when y < length - 4 -> (y + 1, getlines text (y + 1) (y + 4))
+                                        | Up, y, _ when y > 0 -> (y - 1, getlines text (y - 1) (y + 2))
                                         | _, y, _ -> (y, formatText)
 
         { model with viewTextInfo = { model.viewTextInfo with positionY = yPosition; formatText = formatText }; countVersionBack = 0 }, Cmd.ofMsg RememberModel

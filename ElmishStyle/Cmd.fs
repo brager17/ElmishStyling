@@ -7,8 +7,7 @@ module Cmd
     type Cmd<'msg> = Sub<'msg> list
 
     let exec<'msg> (dispatch: Dispatch<'msg>) (cmd: Cmd<'msg>) =
-        cmd
-        |> List.map (fun sub -> sub dispatch)
+        cmd |> List.map (fun sub -> sub dispatch)
 
     let ofMsg<'msg> (msg: 'msg): Cmd<'msg> =
         [ fun (dispatch: Dispatch<'msg>) -> dispatch msg ]

@@ -14,17 +14,16 @@ let main argv =
                 {
                     init = init
                     update = update;
-                    view = (fun x y -> ())
-                    setState = (fun model msg dispatch ->
-                                    let view =  match msg with
-                                                    
-                                                    | WaitUserAction -> SnowAndUserActionView
-                                                    | ChangePosition _ | ChangeAuthor _ | ChangeColor _
-                                                    | ChangeVersion _ | ConsoleEvent _ | RememberModel _ -> OnlyShowView
-                                                    | Exit -> ExitView
-                                    
-                                    view model dispatch
-                        )
+                    setState =
+                     (fun model msg dispatch ->
+                        let view =  match msg with
+                                     | WaitUserAction -> SnowAndUserActionView
+                                     
+                                     | ChangePosition _ | ChangeAuthor _ | ChangeColor _
+                                     | ChangeVersion _ | ConsoleEvent _ | RememberModel _ -> OnlyShowView
+                                     
+                                     | Exit -> ExitView
+                        view model dispatch)
                 }
     run program |> ignore
     0 // return an integer exit code
