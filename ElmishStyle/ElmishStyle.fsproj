@@ -10,7 +10,7 @@
         <Compile Include="Cmd.fs" />
         <Compile Include="RingBuffer.fs" />
         <Compile Include="ElmishProgram.fs" />
-        <Compile Include="LibraryElmishCopy.fs" />
+        <Compile Include="LibraryElmish.fs" />
     </ItemGroup>
 
     <ItemGroup>

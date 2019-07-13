@@ -1,5 +1,5 @@
 module Tests
-open ElmishStyle.LibraryElmishCopy
+open ElmishStyle.LibraryElmish
 open ElmishProgram
 open FsCheck.Xunit
 open FsCheck

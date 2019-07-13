@@ -1,7 +1,7 @@
 ﻿
 module Program
 open System
-open ElmishStyle.LibraryElmishCopy
+open ElmishStyle.LibraryElmish
 open ElmishProgram
 open ElmishStyle
 open ElmishStyle

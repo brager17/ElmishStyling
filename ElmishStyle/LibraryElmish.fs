@@ -1,4 +1,4 @@
-    module ElmishStyle.LibraryElmishCopy
+    module ElmishStyle.LibraryElmish
     open ElmishStyle.Seed
     open System
     open ElmishProgram
